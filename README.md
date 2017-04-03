@@ -16,4 +16,8 @@ export KUDU_MASTER="master-url.fqdn"
 ./kudu-bulk-load 1000000 100 50 4
 ```
 
-this will attempt to insert 1M rows of 100 columns in batches of 20K using 4 threads
+this will do 2 sets of insertions
+
+ * first non-threaded attempt: insert 1M rows of 100 columns in batches of 20K into a table called _t_1000000_100_
+ * second threaded attempt: insert 1M rows of 100 columns in batches of 20K into a table called _t_1000000_100_threaded using 4 threads
+
