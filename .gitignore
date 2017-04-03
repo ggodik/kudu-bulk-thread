@@ -1,0 +1,6 @@
+*.o
+*.a
+*.*~
+*~
+.sconsign.dblite
+kudu-bulk-load
