@@ -169,7 +169,6 @@ Status InsertRows(const std::string& tableName,
     if(++chunk_counter == counter_flush_target)
       {
 	chunk_counter = 0;
-	Util::Timer t("\t\tFlush-" + Util::to_string(i/chunk_size));
 	KUDU_CHECK_OK(session->Flush());
       }
   }
