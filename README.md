@@ -33,13 +33,13 @@ The following env vars are avaiable
 ### Output
 
 ```
-fdscloud@CPEDev071:~/kudu-bulk-thread$ ./kudu-bulk-load 1000000 100 50 4
+ggodik@some-machine:~/kudu-bulk-thread$ ./kudu-bulk-load 1000000 100 50 4
 Running with Kudu client version: kudu 1.2.0-cdh5.10.1 (rev 68a3a5f390628db0ff9a15968d302102fa17e86a)
 Long version info: kudu 1.2.0-cdh5.10.1
 revision 68a3a5f390628db0ff9a15968d302102fa17e86a
 build type RELEASE
 built by None at 06 Mar 2017 12:44:47 PST on ec2-pkg-ubuntu-16-04-impala-0b9d.vpc.cloudera.com
-Host:cpedev091.sandbox.factset.com Tablets:7 BUFFER_SIZE:15000000
+Host:internal-hostname.somewhere.com Tablets:7 BUFFER_SIZE:15000000
 Created a client connection
 Created a schema
 Deleting old table before creating new one
