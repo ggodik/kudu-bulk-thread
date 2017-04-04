@@ -22,14 +22,16 @@ namespace Util
 
   Timer::Timer(const string& _msg)
     : msg(_msg),
-      start(std::clock())
+      start(std::chrono::high_resolution_clock::now())
   {}
 
   Timer::~Timer()
   {
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> dur = end - start;
     cout << msg
 	 << " took:"
-	 << (std::clock() - start)/((double)CLOCKS_PER_SEC)
+	 << dur.count()
 	 << "s"
 	 << endl;
   }

@@ -2,6 +2,7 @@
 #define GRID_UTIL_H
 
 #include <ctime>
+#include <chrono>
 #include <string>
 
 namespace Util
@@ -18,7 +19,7 @@ namespace Util
     Timer(const std::string &);
     ~Timer();
   private:
-    std::clock_t start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
     const std::string msg;
   };
 
