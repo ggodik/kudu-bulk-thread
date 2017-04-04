@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdio>
 
-namespace Grid
+namespace Util
 {
   using namespace std;
   

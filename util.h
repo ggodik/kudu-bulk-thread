@@ -4,9 +4,11 @@
 #include <ctime>
 #include <string>
 
-namespace Grid
+namespace Util
 {
-
+  // provided here as a quick implementation
+  // become some version of this code has to compile
+  // on rhel6 and gcc 4.8 without C++11 support
   std::string to_string(int i);
 
   std::string GetString(int size = 26);

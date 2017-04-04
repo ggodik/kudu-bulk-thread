@@ -40,9 +40,9 @@ using std::vector;
 
 namespace
 {
-  const string master_host = std::getenv("KUDU_MASTER");
-  const int BUFFER_SIZE = 15 * 1000000;
-  const int NUMBER_OF_TABLETS = 9;
+  const string KUDU_MASTER = std::getenv("KUDU_MASTER");
+  const int BUFFER_SIZE = 1000000 * (std::getenv("BUFFER_SIZE") ? atoi(std::getenv("BUFFER_SIZE")) : 15); // in MB
+  const int NUMBER_OF_TABLETS = std::getenv("KUDU_TABLETS") ? atoi(std::getenv("KUDU_TABLETS")) : 7;
 }
 
 static Status CreateClient(const string& addr,
@@ -64,7 +64,7 @@ static KuduSchema CreateSchema(const int cols) {
 
   for(int i = 0; i < cols; ++i)
     {
-      b.AddColumn("int_"  + Grid::to_string(i))
+      b.AddColumn("int_"  + Util::to_string(i))
 	->Type(KuduColumnSchema::INT32)
 	->Encoding(kudu::client::KuduColumnStorageAttributes::BIT_SHUFFLE)
 	->Compression(kudu::client::KuduColumnStorageAttributes::LZ4)
@@ -93,7 +93,7 @@ static Status CreateTable(const shared_ptr<KuduClient>& client,
                           const KuduSchema& schema,
                           int num_tablets,
 			  int num_rows) {
-  Grid::Timer t("Create Table");
+  Util::Timer t("Create Table");
   vector<string> column_names;
   column_names.push_back("key");
 
@@ -105,8 +105,9 @@ static Status CreateTable(const shared_ptr<KuduClient>& client,
     KUDU_CHECK_OK(row->SetInt32(0, i * increment));
     splits.push_back(row);
   }
-  
-  // Create the table.
+
+  // both hash and range partitions enabled
+  // comment out lines of code below to mess with table schema/performance
   KuduTableCreator* table_creator = client->NewTableCreator();
   Status s = table_creator->table_name(table_name)
     .schema(&schema)
@@ -119,6 +120,11 @@ static Status CreateTable(const shared_ptr<KuduClient>& client,
 }
 
 
+/**
+   creates a new client, session, table
+   generates a num_rows X cols + 1 table of consecutive integers
+   
+ */
 Status InsertRows(const std::string& tableName,
 		int cols,
 		int num_rows,
@@ -126,10 +132,10 @@ Status InsertRows(const std::string& tableName,
 		int iteration)
 {
   shared_ptr<KuduClient> client;
-  CreateClient(master_host, 
+  CreateClient(KUDU_MASTER, 
 	       &client);
 
-  Grid::Timer timer("\tDONE::Insert Rows:" + Grid::to_string(iteration));
+  Util::Timer timer("\tDONE::Insert Rows:" + Util::to_string(iteration));
 
 
   shared_ptr<KuduTable> table;
@@ -153,7 +159,7 @@ Status InsertRows(const std::string& tableName,
     KuduInsert* insert = table->NewInsert();
     KuduPartialRow* row = insert->mutable_row();
     KUDU_CHECK_OK(row->SetInt32("key", slice + i));
-    //KUDU_CHECK_OK(row->SetString("group_1", Grid::GetString(2)));
+    //KUDU_CHECK_OK(row->SetString("group_1", Util::GetString(2)));
     for(int j = 0; j < cols; ++j)
       {
 	KUDU_CHECK_OK(row->SetInt32(1+j,slice+i+j));
@@ -163,7 +169,7 @@ Status InsertRows(const std::string& tableName,
     if(++chunk_counter == counter_flush_target)
       {
 	chunk_counter = 0;
-	Grid::Timer t("\t\tFlush-" + Grid::to_string(i/chunk_size));
+	Util::Timer t("\t\tFlush-" + Util::to_string(i/chunk_size));
 	KUDU_CHECK_OK(session->Flush());
       }
   }
@@ -193,23 +199,29 @@ int main(int argc, char* argv[]) {
       kudu::client::GetShortVersionString();
   KUDU_LOG(INFO) << "Long version info: " <<
       kudu::client::GetAllVersionInfo();
-
+  KUDU_LOG(INFO) << "Host:" << KUDU_MASTER
+		 << " Tablets:" << NUMBER_OF_TABLETS
+		 << " BUFFER_SIZE:" << BUFFER_SIZE;
+  
   if (argc < 5) {
     KUDU_LOG(FATAL) << "usage: " << argv[0] << " <rows> <cols> <number of chunks> <concurrency=1>";
   }
+
+
+
   const int rows = atoi(argv[1]);
   const int cols = atoi(argv[2]);
   const int number_of_chunks = atoi(argv[3]);
   const int concurrency = argc == 5 ? atoi(argv[4]) : std::thread::hardware_concurrency();
 
-  const string kTableName = "t_"  + Grid::to_string(rows) + "_" + Grid::to_string(2 + cols);
+  const string kTableName = "t_"  + Util::to_string(rows) + "_" + Util::to_string(2 + cols);
   // Enable verbose debugging for the client library.
   // kudu::client::SetVerboseLogLevel(2);
 
   shared_ptr<KuduClient> client;
 
   // Create and connect a client.
-  KUDU_CHECK_OK(CreateClient(master_host, &client));
+  KUDU_CHECK_OK(CreateClient(KUDU_MASTER, &client));
   KUDU_LOG(INFO) << "Created a client connection";
 
   // Disable the verbose logging.
@@ -232,12 +244,12 @@ int main(int argc, char* argv[]) {
   KUDU_LOG(INFO) << "Created a tables:" << kTableName << "_threaded and " << kTableName;
 
   {
-    Grid::Timer t("Non-Threaded insert");
+    Util::Timer t("Non-Threaded insert");
     InsertRows(kTableName, cols, rows, number_of_chunks, 0);
   }
 
   {
-    Grid::Timer t("Threaded insert:" + Grid::to_string(concurrency));
+    Util::Timer t("Threaded insert:" + Util::to_string(concurrency));
 
     vector<std::thread> threads;
     for(int i = 0; i < concurrency; ++i)
